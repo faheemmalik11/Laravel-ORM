@@ -7,10 +7,10 @@
 
 ### Introduction
 
-Database tables are often related to one another. For example, a blog post may have many comments, or an order could be related to the user who placed it. Eloquent makes managing and working with these relationships easy, and supports several different types of relationships.
+ORM (Object-Relational Mapping) relationships refer to the way objects in an object-oriented programming language are associated with tables and records in a relational database. To make a relationship between tables we often use foreign keys but in this, we refer to objects.
 
 ### One-to-One Relationship
-A one-to-one relationship is a very basic relation. For example, a User model might be associated with one Phone. To define this relationship, we place a phone method on the User model. The phone method should call the hasOne method and return its result:
+A one-to-one relationship is a very basic relation. In this one entity is associated with oother entity through single thing. For example, a User model might be associated with one Phone. To define this relationship, we place a phone method on the User model. The phone method should call the hasOne method and return its result:
 
 ```sh
 <?php
@@ -26,19 +26,17 @@ class User extends Model
      */
     public function phone()
     {
-        return $this->hasOne('App\Phone');
+        return $this->hasOne('App\Models\Phone');
     }
 }
 ```
-
-The first argument passed to the hasOne method is the name of the related model. Once the relationship is defined, we may retrieve the related record using Eloquent's dynamic properties. Dynamic properties allow you to access relationship methods as if they were properties defined on the model:
-
+hasOne method return us the phone which user has when we pass the id of the user in the routes.
 ```sh
 $phone = User::find(1)->phone;
 ```
 
 ### Defining The Inverse Of The Relationship
-So, we can access the Phone model from our User. Now, let's define a relationship on the Phone model that will let us access the User that owns the phone. We can define the inverse of a hasOne relationship using the belongsTo method:
+Inverse is just same. The only difference is that we do things oppositely. The user hasOne phon but in this we will say that phone belongsTo one user. 
 ```sh
 <?php
  
@@ -53,14 +51,15 @@ class Phone extends Model
      */
     public function user()
     {
-        return $this->belongsTo('App\User');
+        return $this->belongsTo('App\Models\User');
     }
 }
 ```
+belongsTo returns the user that owns the phone.
 
 ### One To Many
 
-A one-to-many relationship is used to define relationships where a single model owns any amount of other models. For example, a blog post may have an infinite number of comments. Like all other Eloquent relationships, one-to-many relationships are defined by placing a function on your Eloquent model:
+A one-to-many relationship is between two entities in which one hasMany of other entity. Like for example, the user hasMany cars. 
 ```sh
 <?php
  
@@ -68,33 +67,34 @@ namespace App;
  
 use Illuminate\Database\Eloquent\Model;
  
-class Post extends Model
+class User extends Model
 {
     /**
-     * Get the comments for the blog post.
+     * Get the Cars for the user.
      */
-    public function comments()
+    public function cars()
     {
-        return $this->hasMany('App\Comment');
+        return $this->hasMany('App\Models\Car');
     }
 }
 ```
+What hasMany does is that it returns us the array of cars to which the user belongs.
 
-Remember, Eloquent will automatically determine the proper foreign key column on the Comment model. By convention, Eloquent will take the "snake case" name of the owning model and suffix it with _id. So, for this example, Eloquent will assume the foreign key on the Comment model is post_id.
 
-Once the relationship has been defined, we can access the collection of comments by accessing the comments property. Remember, since Eloquent provides "dynamic properties", we can access relationship methods as if they were defined as properties on the model:
 
 ```sh
-$comments = App\Post::find(1)->comments;
+$cars = User::find(1)->cars;
  
-foreach ($comments as $comment) {
+foreach ($cars as $car) {
     //
 }
 ```
 
+What this does is that it finds the user whom id is given then it returns the cars that belong to the user.
+
 ###  One To Many (Inverse)
 
-Now that we can access all of a post's comments, let's define a relationship to allow a comment to access its parent post. To define the inverse of a hasMany relationship, define a relationship function on the child model which calls the belongsTo method:
+It is same as the one to many but inverse of it. Like we say this specific car of Many cars belongs to the this user. Let's see example:
 
 ```sh
 <?php
@@ -103,22 +103,22 @@ namespace App;
  
 use Illuminate\Database\Eloquent\Model;
  
-class Comment extends Model
+class Car extends Model
 {
     /**
-     * Get the post that owns the comment.
+     * Get the user that owns the Car.
      */
-    public function post()
+    public function user()
     {
-        return $this->belongsTo('App\Post');
+        return $this->belongsTo('App\Models\User');
     }
 }
 ```
-Once the relationship has been defined, we can retrieve the Post model for a Comment by accessing the post "dynamic property"
+Once the relationship has been defined, we can retrieve the Post model for a Car by accessing the post "dynamic property"
 ```sh
-$comment = App\Comment::find(1);
+$Car = Car::find(1);
  
-echo $comment->post->title;
+echo $Car->user->name;
 ```
 
 
@@ -251,73 +251,55 @@ class Mechanic extends Model
 ```
 The first argument passed to the hasOneThrough method is the name of the final model we wish to access, while the second argument is the name of the intermediate model.
 
-Typical Eloquent foreign key conventions will be used when performing the relationship's queries. If you would like to customize the keys of the relationship, you may pass them as the third and fourth arguments to the hasOneThrough method. The third argument is the name of the foreign key on the intermediate model. The fourth argument is the name of the foreign key on the final model. The fifth argument is the local key, while the sixth argument is the local key of the intermediate model:
-
-```sh
-
-class Mechanic extends Model
-{
-    /**
-     * Get the car's owner.
-     */
-    public function carOwner()
-    {
-        return $this->hasOneThrough(
-            'App\Owner',
-            'App\Car',
-            'mechanic_id', // Foreign key on cars table...
-            'car_id', // Foreign key on owners table...
-            'id', // Local key on mechanics table...
-            'id' // Local key on cars table...
-        );
-    }
-}
-
-```
 
 ### Has Many Through Relationship
-The "has-many-through" relationship provides a convenient shortcut for accessing distant relations via an intermediate relation. For example, a Country model might have many Post models through an intermediate User model. In this example, you could easily gather all blog posts for a given country. Let's look at the tables required to define this relationship:
+The "has-many-through" relationship provides a convenient shortcut for accessing distant relations via an intermediate relation. For example, Let us have a scenario where we are creating a restaurant's items/menu and Items belongs to the Type and Types belongs to Category.
+
+In simple words Category has many Types and Type has many Items. Now if we want all the Items which belongs to the Category, we need to keep the category_id in items table.:
 
 ```sh
-countries
+category
     id - integer
     name - string
  
-users
+types
     id - integer
-    country_id - integer
+    category_id - integer
     name - string
  
-posts
+items
     id - integer
-    user_id - integer
+    types_id - integer
     title - string
 ```
 
-Though posts does not contain a country_id column, the hasManyThrough relation provides access to a country's posts via $country->posts. To perform this query, Eloquent inspects the country_id on the intermediate users table. After finding the matching user IDs, they are used to query the posts table.
 
-Now that we have examined the table structure for the relationship, let's define it on the Country model:
+
+Now that we have examined the table structure for the relationship, let's define it on the Category model:
 
 ```sh
 <?php
  
-namespace App;
- 
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
- 
-class Country extends Model
+
+class Category extends Model
 {
-    /**
-     * Get all of the posts for the country.
-     */
-    public function posts()
-    {
-        return $this->hasManyThrough('App\Post', 'App\User');
+    protected $table = 'category';
+    use HasFactory;
+
+    public function items(){
+        return $this->hasManyThrough('App\Models\Item', 'App\Models\Type');
     }
 }
+
 ```
 
 The first argument passed to the hasManyThrough method is the name of the final model we wish to access, while the second argument is the name of the intermediate model.
+
+What this hasMany is doing is that it returns the many items that category has through the type model.
 
 ## ORM Polymorphic Relationships
 
@@ -388,6 +370,7 @@ class User extends Model
     }
 }
 ```
+In this case, morphOne does the work of hasOne in traditional relationships.
 
 #### Retrieving The Relationship
 
@@ -482,48 +465,69 @@ foreach ($post->comments as $comment) {
 ### Many To Many (Polymorphic)
 
 #### Table Structure
-Many-to-many polymorphic relations are slightly more complicated than morphOne and morphMany relationships. For example, a blog Post and Video model could share a polymorphic relation to a Tag model. Using a many-to-many polymorphic relation allows you to have a single list of unique tags that are shared across blog posts and videos. First, let's examine the table structure:
+Many-to-many polymorphic relations are slightly more complicated than morphOne and morphMany relationships. For example, you have three tables in your database: User, Group, Post. Now if we do things traditionally, we will have to create two lookup tables: group_user, post_user. But as we are doing things through polymorphic relations, we can just create one taggable table that will belong to more than one model and can link all the tables.
 
 ```sh
+users
+    id - integer
+    name - string
+ 
+groups
+    id - integer
+    name - string
+ 
 posts
     id - integer
-    name - string
- 
-videos
-    id - integer
-    name - string
- 
-tags
-    id - integer
-    name - string
+    title - string
  
 taggables
-    tag_id - integer
+    user_id - integer
     taggable_id - integer
     taggable_type - string
 ```
 
 #### Model Structure
 
-Next, we're ready to define the relationships on the model. The Post and Video models will both have a tags method that calls the morphToMany method on the base Eloquent class:
-
+Next, we're ready to define the relationships on the model:
+Group Model:
 ```sh
 <?php
- 
-namespace App;
- 
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
- 
-class Post extends Model
+
+class Group extends Model
 {
-    /**
-     * Get all of the tags for the post.
-     */
-    public function tags()
-    {
-        return $this->morphToMany('App\Tag', 'taggable');
+    use HasFactory;
+
+    public function user(){
+        return $this->morphToMany('App\Models\User', 'taggable');
     }
 }
+
+```
+
+Post Model:
+```sh
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Post extends Model
+{
+    use HasFactory;
+
+
+    public function user(){
+        return $this->morphToMany('App\Models\User', 'taggable');
+    }
+}
+
 ```
 #### Defining The Inverse Of The Relationship
 
@@ -531,39 +535,47 @@ Next, on the Tag model, you should define a method for each of its related model
 
 ```sh
 <?php
- 
-namespace App;
- 
-use Illuminate\Database\Eloquent\Model;
- 
-class Tag extends Model
+
+namespace App\Models;
+use App\Models\Role;
+
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
 {
-    /**
-     * Get all of the posts that are assigned this tag.
-     */
-    public function posts()
-    {
-        return $this->morphedByMany('App\Post', 'taggable');
+    
+
+    use HasApiTokens, HasFactory, Notifiable;
+
+  
+
+    public function groups(){
+        return $this->morphedByMany('App\Models\Group','taggable');
     }
- 
-    /**
-     * Get all of the videos that are assigned this tag.
-     */
-    public function videos()
-    {
-        return $this->morphedByMany('App\Video', 'taggable');
+
+    public function posts(){
+        return $this->morphedByMany('App\Models\Post','taggable');
     }
+
+
+
 }
 ```
 
 #### Retrieving The Relationship
 
-Once your database table and models are defined, you may access the relationships via your models. For example, to access all of the tags for a post, you can use the tags dynamic property:
+Once your database table and models are defined, you may access the relationships via your models. For example, to access all of the groups of a user, you can do:
 
 ```sh
-$post = App\Post::find(1);
- 
-foreach ($post->tags as $tag) {
-    //
-}
+Route::get('/morph/{id}', function($id) {
+    $user_groups = User::find($id);
+    $new_groups = $user_groups->groups;
+    return $new_groups;
+  
+});
 ```

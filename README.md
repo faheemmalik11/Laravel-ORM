@@ -1,7 +1,188 @@
 # Laravel-ORM
 
+* [ORM Functions](#Orm-functions)
 * [ORM Relationships](#ORM-Relationships)
 * [ORM Polymorphic Relationships](#ORM-Polymorphic-Relationships)
+
+## ORM Functions
+
+### Introduction
+
+The Eloquent ORM is used to interact with the database using pre written methods. It is an easy way to directly insert, update, delete, read data to database using your ORM functions. 
+
+Before getting started, be sure to configure a database connection in config/database.php.
+
+
+### Retrieving All Records
+
+```sh
+$users = User::all();
+```
+
+### Retrieving A Record By Primary Key
+
+```sh
+$user = User::find(1);
+var_dump($user->name);
+```
+
+### Retrieving A Model By Primary Key Or Throw An Exception
+
+Sometimes you may wish to throw an exception if a model is not found. To do this, you may use the firstOrFail method:
+```sh
+$model = User::findOrFail(1);
+$model = User::where('votes', '>', 100)->firstOrFail();
+```
+
+### Retrievin Data Based On Constraints
+
+```sh
+$count = User::where('votes', '>', 100)->count();
+```
+
+```sh
+$count = User::where('id', 2)->get();
+```
+
+### Inserting 
+
+To create a new record in the database from a model, simply create a new model instance and call the save method.
+
+```sh
+$user = new User;
+ 
+$user->name = 'John';
+$user->save();
+```
+
+### Updating A Retrieved Model
+
+To update a model, you may retrieve it, change an attribute, and use the save method:
+```sh
+$user = User::find(1);
+ 
+$user->email = 'john@foo.com';
+$user->save();
+```
+
+Or you can just:
+
+```sh
+User::where(1)->update(['email'=>'john@foo.com'])
+```
+
+### Deleting An Existing Model
+To delete a model, simply call the delete method on the instance:
+```sh
+$user = User::find(1);
+$user->delete();
+```
+OR
+
+```sh
+User::destroy(1);
+ 
+User::destroy([1, 2, 3]);
+ 
+User::destroy(1, 2, 3);
+```
+
+
+### Mass Assignment
+
+Mass assignment lets you insert data to the rows in your table of database. You just have to specify the attributes in your model constructor.
+
+To get started, set the fillable or guarded properties on your model.
+
+
+#### Defining Fillable Attributes On A Model
+The fillable property specifies which attributes should be mass-assignable. This can be set at the class or instance level.
+```sh
+class User extends Model {
+ 
+    protected $fillable = ['first_name', 'last_name', 'email'];
+ 
+}
+```
+
+#### Defining Guarded Attributes On A Model
+
+The inverse of fillable is guarded, and serves as a "black-list" instead of a "white-list":
+```sh
+class User extends Model {
+ 
+    protected $guarded = ['id', 'password'];
+ 
+}
+```
+
+#### Using The Model Create Method
+
+You may also use the create method to save a new model in a single line. The inserted model instance will be returned to you from the method. However, before doing so, you will need to specify either a fillable or guarded attribute on the model, as all Eloquent models protect against mass-assignment.
+
+
+```sh
+// Create a new user in the database...
+$user = User::create(['name' => 'John']);
+ 
+// Retrieve the user by the attributes, or create it if it doesn't exist...
+$user = User::firstOrCreate(['name' => 'John']);
+ 
+// Retrieve the user by the attributes, or instantiate a new instance...
+$user = User::firstOrNew(['name' => 'John']);
+
+```
+
+### Soft Deleting
+
+When soft deleting a model, it is not actually removed from your database. Instead, a deleted_at timestamp is set on the record. To enable soft deletes for a model, apply the SoftDeletes to the model:
+
+```sh
+use Illuminate\Database\Eloquent\SoftDeletes;
+ 
+class User extends Model {
+ 
+    use SoftDeletes;
+ 
+    protected $dates = ['deleted_at'];
+ 
+}
+```
+To add a deleted_at column to your table, you may use the softDeletes method from a migration:
+```sh
+$table->softDeletes();
+```
+
+Now, when you call the delete method on the model, the deleted_at column will be set to the current timestamp. When querying a model that uses soft deletes, the "deleted" models will not be included in query results.
+
+
+#### Retrieving Soft deleted data
+
+To force soft deleted models to appear in a result set, use the `withTrashed` method on the query:
+
+```sh
+$users = User::withTrashed()->where('account_id', 1)->get();
+```
+
+If you wish to only receive soft deleted models in your results, you may use the `onlyTrashed` method:
+
+```sh
+$users = User::onlyTrashed()->where('account_id', 1)->get();
+```
+#### Restoring Soft deleted data
+To restore a soft deleted model into an active state, use the `restore` method:
+
+```sh
+$user->restore();
+```
+
+#### Permanently Deleting Soft deleted data
+If you wish to truly remove a model from the database, you may use the `forceDelete` method:
+
+```sh
+$user->forceDelete();
+```
+<hr>
 
 ## ORM Relationships
 
@@ -301,6 +482,8 @@ The first argument passed to the hasManyThrough method is the name of the final 
 
 What this hasMany is doing is that it returns the many items that category has through the type model.
 
+<hr>
+
 ## ORM Polymorphic Relationships
 
 A polymorphic relationship allows the target model to belong to more than one type of model using a single association.
@@ -579,3 +762,4 @@ Route::get('/morph/{id}', function($id) {
   
 });
 ```
+<hr>
